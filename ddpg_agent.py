@@ -3,16 +3,16 @@ import random
 import copy
 from collections import namedtuple, deque
 
-from model import Actor, Critic
+from nn_model import Actor, Critic
 
 import torch
 import torch.nn.functional as F
 import torch.optim as optim
 import time
 
-BUFFER_SIZE = int(1e6)  # replay buffer size
+BUFFER_SIZE = int(1e5)  # replay buffer size
 BATCH_SIZE = 128        # minibatch size
-GAMMA = 0.9            # discount factor
+GAMMA = 0.99            # discount factor
 TAU = 1e-3              # for soft update of target parameters
 LR_ACTOR = 1e-4         # learning rate of the actor
 LR_CRITIC = 1e-3        # learning rate of the critic
@@ -113,13 +113,13 @@ class Agent():
         # Get predicted next-state actions and Q values from target models
         actions_next = self.actor_target(next_states)
         Q_targets_next = self.critic_target(next_states, actions_next)
-        # Compute Q targets for current states (y_i)
+        # Compute Q targets for current states (y_i)s
         Q_targets = rewards + (gamma * Q_targets_next * (1 - dones))
         # Compute critic loss
         Q_expected = self.critic_local(states, actions)
         critic_loss = F.mse_loss(Q_expected, Q_targets)
         # Minimize the loss
-        if self.freeze_critic:
+        if not self.freeze_critic:
             self.critic_optimizer.zero_grad()
             critic_loss.backward()
             self.critic_optimizer.step()
@@ -129,7 +129,7 @@ class Agent():
         actions_pred = self.actor_local(states)
         actor_loss = -self.critic_local(states, actions_pred).mean()
         # Minimize the loss
-        if self.freeze_agent:
+        if not self.freeze_agent:
             self.actor_optimizer.zero_grad()
             actor_loss.backward()
             self.actor_optimizer.step()
@@ -156,7 +156,7 @@ class Agent():
 class OUNoise:
     """Ornstein-Uhlenbeck process."""
 
-    def __init__(self, size, seed, num_agents, mu=0., theta=1, sigma=0.3):
+    def __init__(self, size, seed, num_agents, mu=0., theta=1.25, sigma=0.3):
         """Initialize parameters and noise process."""
         self.mu = mu * np.ones(size)
         self.theta = theta
