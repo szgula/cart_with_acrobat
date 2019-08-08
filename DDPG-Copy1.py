@@ -28,7 +28,7 @@ def ddpg(n_episodes=1000, max_t=250, print_every=100, dt=0.01, action_scalar=5, 
     last_mean = 0
     for i_episode in range(1, n_episodes+1):
         Q = np.zeros((env.num_of_instances, env.n_q))
-        init_noise = 0.3
+        init_noise = 0.5
         Q[:, 1:3] = init_noise * np.random.sample((num_agents, 2)) - 0.5 * init_noise
         #Q[:, 4:] = init_noise * np.random.sample((num_agents, 2)) - 0.5 * init_noise
         #Q[:, 1:3] += np.deg2rad(180)
