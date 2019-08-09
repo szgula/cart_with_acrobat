@@ -41,8 +41,8 @@ def ddpg(n_episodes=1000, max_t=250, print_every=100, dt=0.01, action_scalar=5, 
             action = agent.act(state)
             next_state, reward, done, _ = env.step(action_scalar * action, dt)
             energy = env.energy()
-            #reward_2 = np.sum((energy[1] + energy[0])[:, 1:] / np.array(env.get_max_pot_energy()), axis=1) / 2
-            #reward_2 = reward_2.clip(-1, 1)
+            reward_2 = np.sum((energy[1] + energy[0])[:, 1:] / np.array(env.get_max_pot_energy()), axis=1) / 2
+            reward_2 = reward_2.clip(-1, 1)
             reward = reward.transpose()[:, 1].reshape((env.num_of_instances, 1))
             if debug:
                 var1.append(reward_2[0])
@@ -50,8 +50,8 @@ def ddpg(n_episodes=1000, max_t=250, print_every=100, dt=0.01, action_scalar=5, 
                 var3.append(env.state[0, 1])
                 var4.append(env.state[0, 2])
 
-            #reward = 3 * reward + reward_2.reshape((env.num_of_instances, 1))
-            #reward /= 4
+            reward = 1 * reward + reward_2.reshape((env.num_of_instances, 1))
+            reward /= 2
             #print(state.shape, action.shape, reward.shape, next_state.shape, done.shape)
             agent.step(state, action, reward, next_state, done)
             state = next_state
@@ -74,16 +74,16 @@ def ddpg(n_episodes=1000, max_t=250, print_every=100, dt=0.01, action_scalar=5, 
             #    init_noise *= 0.2
             last_mean = mean
             print('\rEpisode {}\tAverage Score: {:.2f}'.format(i_episode, mean))
-            torch.save(agent.actor_local.state_dict(), 'checkpoint_actor_3.pth')
-            torch.save(agent.critic_local.state_dict(), 'checkpoint_critic_3.pth')
+            torch.save(agent.actor_local.state_dict(), 'checkpoint_actor_2.pth')
+            torch.save(agent.critic_local.state_dict(), 'checkpoint_critic_2.pth')
             
     return scores
 
 
-agent.actor_local.load_state_dict(torch.load('checkpoint_actor_3.pth'))
-agent.critic_local.load_state_dict(torch.load('checkpoint_critic_3.pth'))
-agent.actor_target.load_state_dict(torch.load('checkpoint_actor_3.pth'))
-agent.critic_target.load_state_dict(torch.load('checkpoint_critic_3.pth'))
+#agent.actor_local.load_state_dict(torch.load('checkpoint_actor_2.pth'))
+#agent.critic_local.load_state_dict(torch.load('checkpoint_critic_2.pth'))
+#agent.actor_target.load_state_dict(torch.load('checkpoint_actor_2.pth'))
+#agent.critic_target.load_state_dict(torch.load('checkpoint_critic_2.pth'))
 scores = ddpg(max_t=250)
 
 fig = plt.figure()
@@ -96,8 +96,8 @@ plt.show()
 
 
 
-agent.actor_local.load_state_dict(torch.load('checkpoint_actor_3.pth'))
-agent.critic_local.load_state_dict(torch.load('checkpoint_critic_3.pth'))
+agent.actor_local.load_state_dict(torch.load('checkpoint_actor_2.pth'))
+agent.critic_local.load_state_dict(torch.load('checkpoint_critic_2.pth'))
 
 state = env.reset()
 for t in range(200):
