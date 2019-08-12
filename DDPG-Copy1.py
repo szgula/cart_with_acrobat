@@ -28,7 +28,7 @@ def ddpg(n_episodes=1000, max_t=250, print_every=100, dt=0.01, action_scalar=5, 
     last_mean = 0
     for i_episode in range(1, n_episodes+1):
         Q = np.zeros((env.num_of_instances, env.n_q))
-        init_noise = 3.0
+        init_noise = 2 * np.pi
         Q[:, 1:3] = init_noise * np.random.sample((num_agents, 2)) - 0.5 * init_noise
         #Q[:, 4:] = init_noise * np.random.sample((num_agents, 2)) - 0.5 * init_noise
         #Q[:, 1:3] += np.deg2rad(180)
@@ -74,16 +74,16 @@ def ddpg(n_episodes=1000, max_t=250, print_every=100, dt=0.01, action_scalar=5, 
             #    init_noise *= 0.2
             last_mean = mean
             print('\rEpisode {}\tAverage Score: {:.2f}'.format(i_episode, mean))
-            torch.save(agent.actor_local.state_dict(), 'checkpoint_actor_2.pth')
-            torch.save(agent.critic_local.state_dict(), 'checkpoint_critic_2.pth')
+            torch.save(agent.actor_local.state_dict(), 'checkpoint_actor_1.pth')
+            torch.save(agent.critic_local.state_dict(), 'checkpoint_critic_1.pth')
             
     return scores
 
 
-agent.actor_local.load_state_dict(torch.load('checkpoint_actor_2.pth'))
-agent.critic_local.load_state_dict(torch.load('checkpoint_critic_2.pth'))
-agent.actor_target.load_state_dict(torch.load('checkpoint_actor_2.pth'))
-agent.critic_target.load_state_dict(torch.load('checkpoint_critic_2.pth'))
+#agent.actor_local.load_state_dict(torch.load('checkpoint_actor_1.pth'))
+#agent.critic_local.load_state_dict(torch.load('checkpoint_critic_1.pth'))
+#agent.actor_target.load_state_dict(torch.load('checkpoint_actor_1.pth'))
+#agent.critic_target.load_state_dict(torch.load('checkpoint_critic_1.pth'))
 scores = ddpg(max_t=250)
 
 fig = plt.figure()
@@ -96,8 +96,8 @@ plt.show()
 
 
 
-agent.actor_local.load_state_dict(torch.load('checkpoint_actor_2.pth'))
-agent.critic_local.load_state_dict(torch.load('checkpoint_critic_2.pth'))
+agent.actor_local.load_state_dict(torch.load('checkpoint_actor_1.pth'))
+agent.critic_local.load_state_dict(torch.load('checkpoint_critic_1.pth#'))
 
 state = env.reset()
 for t in range(200):
