@@ -1,11 +1,19 @@
 
 import numpy as np
 np.set_printoptions(precision=4)
+from enum import Enum
 
+
+
+
+class RewardType(Enum):
+    NORM_HIGH = 1
+    NORM_HIGH_WITH_ENERGY = 2
+    POSITION_DIFF = 3
 
 class CartAcrobat:
     def __init__(self, l1=1, l2=1, m=(0.3, 0.2, 0.2), b=(0.2, 0.01, 0.01), g=9.81, rail_lims=(-3, 3),
-                 force_lims=(-20, 20), num_instances=1):
+                 force_lims=(-20, 20), num_instances=1, reward_type=RewardType.NORM_HIGH_WITH_ENERGY):
         self.g = np.float64(9.81)
         self.l1 = np.float64(l1)
         self.l2 = np.float64(l2)
@@ -14,6 +22,7 @@ class CartAcrobat:
         self.g = np.float64(g)
         self.rail_lims = np.array(rail_lims, dtype=np.float64)
         self.force_lims = np.array(force_lims, dtype=np.float64)
+        self.reward_type = reward_type
 
         # System dimensions
         self.n_u = 1  # inputs
@@ -138,12 +147,44 @@ class CartAcrobat:
         pose_next[:, 1:3] = np.mod(pose_next[:, 1:3] + np.pi, 2 * np.pi) - np.pi  # unwrap angles onto [-pi, pi]
         self.state = np.concatenate([pose_next, twist_next], axis=1)
         self.time_elapsed += dt
-        reward = self.get_norm_hight()
-        reward += done * -1000
+        reward = self.reward(done=done, type=self.reward_type)
         if np.any(done):
             self.reset(hard=False, done=done)
         done = done.reshape((self.num_of_instances, 1))
         return self.state, reward, done, ''
+
+
+    def reward(self, done, type=0):
+        '''
+
+        :param done:
+        :param type:
+            1 - normalize high
+            2 - normalize high + saturated energy
+            3 - position
+        :return:
+        '''
+        if type == RewardType.NORM_HIGH or type == RewardType.NORM_HIGH_WITH_ENERGY:
+            reward = self.get_norm_hight()
+            reward += done * -1000
+            reward = reward.transpose()[:, 1].reshape((self.num_of_instances, 1))
+            if type == 1:
+                energy = self.energy()
+                reward_2 = np.sum((energy[1] + energy[0])[:, 1:] / np.array(self.get_max_pot_energy()), axis=1) / 2
+                reward_2 = reward_2.clip(-1, 1)
+                reward = 1 * reward + reward_2.reshape((self.num_of_instances, 1))
+                reward /= 2
+        elif type == RewardType.POSITION_DIFF:
+            pose = np.copy(self.state[:, :self.n_d])
+            pose = np.abs(pose)
+            r_pos_x = pose[:, 0] / self.rail_lims[1]
+            r_pos_theta_1 = pose[:, 1] / np.pi
+            r_pos_theta_2 = pose[:, 2] / np.pi
+            reward = (-1) * (r_pos_x + 5 * r_pos_theta_1 + 5 * r_pos_theta_2)
+            reward /= 11
+            reward = reward.reshape((self.num_of_instances, 1))
+
+        return reward
 
     def reset(self, hard=True, done=None):
         if hard:
