@@ -3,7 +3,8 @@ import random
 import copy
 from collections import namedtuple, deque
 
-from nn_model import Actor, Critic
+import nn_model
+import nn_model_5l
 
 import torch
 import torch.nn.functional as F
@@ -37,7 +38,7 @@ def timeit(method):
 class Agent():
     """Interacts with and learns from the environment."""
     
-    def __init__(self, state_size, action_size, random_seed, num_agents=5, freeze_agent=False, freeze_critic=False):
+    def __init__(self, state_size, action_size, random_seed, num_agents=5, freeze_agent=False, freeze_critic=False, nn_deepth=4):
         """Initialize an Agent object.
         
         Params
@@ -53,13 +54,25 @@ class Agent():
         self.seed = random.seed(random_seed)
 
         # Actor Network (w/ Target Network)
-        self.actor_local = Actor(state_size, action_size, random_seed).to(device)
-        self.actor_target = Actor(state_size, action_size, random_seed).to(device)
+        if nn_deepth == 4:
+            self.actor_local = nn_model.Actor(state_size, action_size, random_seed).to(device)
+            self.actor_target = nn_model.Actor(state_size, action_size, random_seed).to(device)
+        elif nn_deepth == 5:
+            self.actor_local = nn_model_5l.Actor(state_size, action_size, random_seed).to(device)
+            self.actor_target = nn_model_5l.Actor(state_size, action_size, random_seed).to(device)
+        else:
+            raise NotImplementedError
         self.actor_optimizer = optim.Adam(self.actor_local.parameters(), lr=LR_ACTOR)
 
         # Critic Network (w/ Target Network)
-        self.critic_local = Critic(state_size, action_size, random_seed).to(device)
-        self.critic_target = Critic(state_size, action_size, random_seed).to(device)
+        if nn_deepth == 4:
+            self.critic_local = nn_model.Critic(state_size, action_size, random_seed).to(device)
+            self.critic_target = nn_model.Critic(state_size, action_size, random_seed).to(device)
+        elif nn_deepth == 5:
+            self.critic_local = nn_model_5l.Critic(state_size, action_size, random_seed).to(device)
+            self.critic_target = nn_model_5l.Critic(state_size, action_size, random_seed).to(device)
+        else:
+            raise NotImplementedError
         self.critic_optimizer = optim.Adam(self.critic_local.parameters(), lr=LR_CRITIC, weight_decay=WEIGHT_DECAY)
 
         # Noise process
