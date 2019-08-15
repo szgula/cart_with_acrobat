@@ -12,7 +12,7 @@ np.set_printoptions(precision=4)
 
 num_agents = 64
 env = CartAcrobat(m=(0.2, 0.2, 0.2), b=(0.2, 0.1, 0.1), rail_lims=(-200, 200), num_instances=num_agents,
-                  reward_type=RewardType.POSITION_DIFF)
+                  reward_type=RewardType.ENERGY_NO_SATURATION)
 
 agent = Agent(state_size=6, action_size=1, random_seed=2, num_agents=num_agents)
 
@@ -31,9 +31,9 @@ def ddpg(n_episodes=1000, max_t=500, print_every=50, dt=0.01, action_scalar=50, 
     for i_episode in range(1, n_episodes+1):
         Q = np.zeros((env.num_of_instances, env.n_q))
 
-        Q[:, 1:3] = init_noise * np.random.sample((num_agents, 2)) - 0.5 * init_noise
+        #Q[:, 1:3] = init_noise * np.random.sample((num_agents, 2)) - 0.5 * init_noise
         #Q[:, 4:] = init_noise * np.random.sample((num_agents, 2)) - 0.5 * init_noise
-        #Q[:, 1:3] += np.deg2rad(180)
+        Q[:, 1:3] += np.deg2rad(180)
         env.update_state(Q)
 
         state = env.reset()
@@ -70,8 +70,8 @@ def ddpg(n_episodes=1000, max_t=500, print_every=50, dt=0.01, action_scalar=50, 
             #    init_noise *= 0.2
             last_mean = mean
             print('\rEpisode {}\tAverage Score: {:.2f}'.format(i_episode, mean))
-            torch.save(agent.actor_local.state_dict(), 'checkpoint_actor_force50.pth')
-            torch.save(agent.critic_local.state_dict(), 'checkpoint_critic_force50.pth')
+            torch.save(agent.actor_local.state_dict(), 'checkpoint_actor_force50_energy_.pth')
+            torch.save(agent.critic_local.state_dict(), 'checkpoint_critic_force50_energy_.pth')
             if init_noise == 0.2:
                 init_noise = 2*np.pi
             else:
@@ -84,10 +84,10 @@ def ddpg(n_episodes=1000, max_t=500, print_every=50, dt=0.01, action_scalar=50, 
 #agent.critic_local.load_state_dict(torch.load('checkpoint_critic_force50.pth'))
 #agent.actor_target.load_state_dict(torch.load('checkpoint_actor_force50.pth'))
 #agent.critic_target.load_state_dict(torch.load('checkpoint_critic_force50.pth'))
-agent.actor_local.load_state_dict(torch.load('colab_results/checkpoint_actor_force50-2.pth', map_location=lambda storage, loc: storage))
-agent.critic_local.load_state_dict(torch.load('colab_results/checkpoint_critic_force50-2.pth', map_location=lambda storage, loc: storage))
-agent.actor_target.load_state_dict(torch.load('colab_results/checkpoint_actor_force50-2.pth', map_location=lambda storage, loc: storage))
-agent.critic_target.load_state_dict(torch.load('colab_results/checkpoint_critic_force50-2.pth', map_location=lambda storage, loc: storage))
+#agent.actor_local.load_state_dict(torch.load('colab_results/checkpoint_actor_force50_206per500.pth', map_location=lambda storage, loc: storage))
+#agent.critic_local.load_state_dict(torch.load('colab_results/checkpoint_critic_force50_206per500.pth', map_location=lambda storage, loc: storage))
+#agent.actor_target.load_state_dict(torch.load('colab_results/checkpoint_actor_force50_206per500.pth', map_location=lambda storage, loc: storage))
+#agent.critic_target.load_state_dict(torch.load('colab_results/checkpoint_critic_force50_206per500.pth', map_location=lambda storage, loc: storage))
 scores = ddpg(max_t=250)
 
 fig = plt.figure()

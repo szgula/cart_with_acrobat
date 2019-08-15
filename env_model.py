@@ -10,6 +10,7 @@ class RewardType(Enum):
     NORM_HIGH = 1
     NORM_HIGH_WITH_ENERGY = 2
     POSITION_DIFF = 3
+    ENERGY_NO_SATURATION = 4
 
 class CartAcrobat:
     def __init__(self, l1=1, l2=1, m=(0.3, 0.2, 0.2), b=(0.2, 0.01, 0.01), g=9.81, rail_lims=(-3, 3),
@@ -168,7 +169,7 @@ class CartAcrobat:
             reward = self.get_norm_hight()
             reward += done * -1000
             reward = reward.transpose()[:, 1].reshape((self.num_of_instances, 1))
-            if type == 1:
+            if type == RewardType.NORM_HIGH_WITH_ENERGY:
                 energy = self.energy()
                 reward_2 = np.sum((energy[1] + energy[0])[:, 1:] / np.array(self.get_max_pot_energy()), axis=1) / 2
                 reward_2 = reward_2.clip(-1, 1)
@@ -183,6 +184,15 @@ class CartAcrobat:
             reward = (-1) * (r_pos_x + 5 * r_pos_theta_1 + 5 * r_pos_theta_2)
             reward /= 11
             reward = reward.reshape((self.num_of_instances, 1))
+
+        elif type == RewardType.ENERGY_NO_SATURATION:
+            energy = self.energy()
+            reward = np.sum((energy[1] + energy[0])[:, 1:] / np.array(self.get_max_pot_energy()), axis=1) / 2
+            reward /= 10000
+            reward = reward.reshape((self.num_of_instances, 1))
+            # TODO: replace this hardcoded scalar (50)
+            x_pos_penelty = np.abs(self.state[:, 0]) / self.rail_lims[1]
+            reward -= x_pos_penelty.reshape(self.num_of_instances, 1)
 
         return reward
 
