@@ -46,14 +46,14 @@ class CartAcrobat:
         Ek = np.array([0.5 * self.m[0] * (self.state[:, 3] ** 2),
                        self.m[1] * ((self.state[:, 3] + self.l1 * self.state[:, 4] * np.cos(self.state[:, 1])) ** 2 +
                                     (0 - self.l1 * self.state[:, 4] * np.sin(self.state[:, 1])) ** 2),
-                       self.m[1] * ((self.state[:, 3] + self.l1 * self.state[:, 4] * np.cos(
+                       self.m[2] * ((self.state[:, 3] + self.l1 * self.state[:, 4] * np.cos(
                            self.state[:, 1]) + self.l2 * self.state[:, 5] * np.cos(self.state[:, 2])) ** 2 +
                                     (0 - self.l1 * self.state[:, 4] * np.sin(self.state[:, 1]) - self.l2 * self.state[:,
                                                                                                            5] * np.sin(
                                         self.state[:, 2])) ** 2)]).transpose()
         Ep = np.array([np.zeros((self.num_of_instances,)),
                        self.m[1] * self.l1 * np.cos(self.state[:, 1]),
-                       self.m[1] * (self.l1 * np.cos(self.state[:, 1]) + self.l2 * np.cos(
+                       self.m[2] * (self.l1 * np.cos(self.state[:, 1]) + self.l2 * np.cos(
                            self.state[:, 2]))]).transpose()
 
         return Ek, Ep
@@ -69,6 +69,8 @@ class CartAcrobat:
 
     def dstate_dt(self, u, dt=0.05):
         q = self.state
+        if q.ndim == 1:
+            q = np.expand_dims(q, axis=0)
         theta1 = q[:, 1]
         theta2 = q[:, 2]
         dp = q[:, 3]
@@ -98,7 +100,7 @@ class CartAcrobat:
         P1[:, 2, 0] = (self.l1 * self.l2 * self.m[2] * (dtheta1 ** 2) * np.sin(theta1 - theta2)
                        + self.g * self.l2 * self.m[2] * np.sin(theta2))
 
-        P2 = b * self.state[:, self.n_d:]
+        P2 = b * q[:, self.n_d:]
         P2 = P2.reshape((self.num_of_instances, 3, 1))
 
         P3 = np.zeros((self.num_of_instances, 3, 1))
@@ -114,6 +116,8 @@ class CartAcrobat:
         done = False
         q = self.state
         q = np.array(q, dtype=np.float64)
+        if q.ndim == 1:
+            q = np.expand_dims(q, axis=0)
 
         # Enforce input saturation and add disturbance
         u_act = np.clip(np.float64(u), self.force_lims[0], self.force_lims[1]) + disturb
@@ -125,7 +129,7 @@ class CartAcrobat:
 
         # Partial-Verlet integrate state and enforce rail constraints
         pose_next = pose + dt * twist + 0.5 * (dt ** 2)
-        done = np.logical_or(self.state[:, 0] < self.rail_lims[0], self.state[:, 0] > self.rail_lims[1])
+        done = np.logical_or(q[:, 0] < self.rail_lims[0], q[:, 0] > self.rail_lims[1])
         pose_next[:, 0] = np.clip(pose_next[:, 0], self.rail_lims[0], self.rail_lims[1])
 
         twist_next = twist + dt * accel
