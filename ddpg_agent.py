@@ -38,7 +38,7 @@ def timeit(method):
 class Agent():
     """Interacts with and learns from the environment."""
     
-    def __init__(self, state_size, action_size, random_seed, num_agents=5, freeze_agent=False, freeze_critic=False, nn_deepth=4):
+    def __init__(self, state_size, action_size, random_seed, num_agents=5, freeze_agent=False, freeze_critic=False, nn_agent_deepth=4, nn_critic_deepth=4):
         """Initialize an Agent object.
         
         Params
@@ -54,10 +54,10 @@ class Agent():
         self.seed = random.seed(random_seed)
 
         # Actor Network (w/ Target Network)
-        if nn_deepth == 4:
+        if nn_agent_deepth == 4:
             self.actor_local = nn_model.Actor(state_size, action_size, random_seed).to(device)
             self.actor_target = nn_model.Actor(state_size, action_size, random_seed).to(device)
-        elif nn_deepth == 5:
+        elif nn_agent_deepth == 5:
             self.actor_local = nn_model_5l.Actor(state_size, action_size, random_seed).to(device)
             self.actor_target = nn_model_5l.Actor(state_size, action_size, random_seed).to(device)
         else:
@@ -65,10 +65,10 @@ class Agent():
         self.actor_optimizer = optim.Adam(self.actor_local.parameters(), lr=LR_ACTOR)
 
         # Critic Network (w/ Target Network)
-        if nn_deepth == 4:
+        if nn_critic_deepth == 4:
             self.critic_local = nn_model.Critic(state_size, action_size, random_seed).to(device)
             self.critic_target = nn_model.Critic(state_size, action_size, random_seed).to(device)
-        elif nn_deepth == 5:
+        elif nn_critic_deepth == 5:
             self.critic_local = nn_model_5l.Critic(state_size, action_size, random_seed).to(device)
             self.critic_target = nn_model_5l.Critic(state_size, action_size, random_seed).to(device)
         else:
