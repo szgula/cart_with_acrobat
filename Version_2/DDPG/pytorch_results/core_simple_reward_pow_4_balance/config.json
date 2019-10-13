@@ -1,0 +1,1 @@
+{"name": "core_simple_reward_pow_4_balance", "tau": 0.01, "learning_rate": 5e-05, "gamma": 0.99, "capacity": 50000, "batch_size": 64, "update_iteration": 10, "exploration_noise": 0.1}

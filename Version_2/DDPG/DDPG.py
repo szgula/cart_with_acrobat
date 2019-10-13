@@ -303,7 +303,7 @@ def main():
         print("====================================")
         if args.load: agent.load()
         for i in range(args.max_episode):
-            state = env.reset(up=(i % 12 == 0))
+            state = env.reset()#up=(i % 12 == 0))
             theta_1_start = state[2]
             theta_2_start = state[4]
             for t in count():
