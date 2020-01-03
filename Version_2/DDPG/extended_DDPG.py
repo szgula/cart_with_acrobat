@@ -195,7 +195,7 @@ import numpy as np
 
 def train():
     ######### Hyperparameters #########
-    env_name = "BipedalWalker-v2"
+    env_name = "CartAcrobat-v0" #"BipedalWalker-v2"
     log_interval = 10  # print avg reward after interval
     random_seed = 0
     gamma = 0.99  # discount for future rewards
@@ -206,7 +206,7 @@ def train():
     policy_noise = 0.2  # target policy smoothing noise
     noise_clip = 0.5
     policy_delay = 2  # delayed policy updates parameter
-    max_episodes = 1000  # max num of episodes
+    max_episodes = 10000  # max num of episodes
     max_timesteps = 2000  # max timesteps in one episode
     directory = "./preTrained/{}".format(env_name)  # save trained models
     filename = "TD3_{}_{}".format(env_name, random_seed)
