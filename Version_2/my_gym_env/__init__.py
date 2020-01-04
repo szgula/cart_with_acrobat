@@ -60,7 +60,12 @@ register(
 register(
     id='CartAcrobat-v0',
     entry_point='gym.envs.classic_control:CartAcrobatEnv',
-    max_episode_steps=200,
+    reward_threshold=195.0,
+)
+
+register(
+    id='CartAcrobat-v1',
+    entry_point='gym.envs.classic_control:CartAcrobatsEnv',
     reward_threshold=195.0,
 )
 

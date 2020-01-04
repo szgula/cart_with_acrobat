@@ -41,44 +41,69 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
 class Actor(nn.Module):
-    def __init__(self, state_dim, action_dim, max_action):
+    def __init__(self, state_dim, action_dim):
         super(Actor, self).__init__()
 
-        self.l1 = nn.Linear(state_dim, 400)
-        self.l2 = nn.Linear(400, 300)
-        self.l3 = nn.Linear(300, action_dim)
+        self.bn_0 = nn.BatchNorm1d(state_dim)
+        self.l1 = nn.Linear(state_dim, 512)
+        self.l2 = nn.Linear(512, 456)
+        self.bn_2 = nn.BatchNorm1d(456)
+        self.l3_1 = nn.Linear(456, 128)
+        self.l4_1 = nn.Linear(128, 64)
+        self.bn_4 = nn.BatchNorm1d(64 + state_dim)
+        self.l5_1 = nn.Linear(64+state_dim, 32)
+        self.l6_1 = nn.Linear(32, action_dim)
 
-        self.max_action = max_action
-
-    def forward(self, state):
-        a = F.relu(self.l1(state))
-        a = F.relu(self.l2(a))
-        a = torch.tanh(self.l3(a)) * self.max_action
-        return a
+    def forward(self, input):
+        x = self.bn_0(input)
+        x = self.l1(x)
+        x = F.relu(x)
+        x = self.l2(x)
+        x = self.bn_2(x)
+        x = F.relu(x)
+        x = self.l3_1(x)
+        x = F.relu(x)
+        x = F.relu(self.l4_1(x))
+        x = torch.cat((x, input), 1)
+        x = self.bn_4(x)
+        x = F.relu(self.l5_1(x))
+        x = torch.tanh(self.l6_1(x))
+        return x
 
 
 class Critic(nn.Module):
     def __init__(self, state_dim, action_dim):
         super(Critic, self).__init__()
 
+        self.bn_0 = nn.BatchNorm1d(state_dim + action_dim) # TODO: normalize action on the input
         self.l1 = nn.Linear(state_dim + action_dim, 400)
         self.l2 = nn.Linear(400, 300)
-        self.l3 = nn.Linear(300, 1)
+        self.bn_2 = nn.BatchNorm1d(300)
+        self.l3 = nn.Linear(300, 300)
+        self.l4 = nn.Linear(300, 50)
+        self.bn_4 = nn.BatchNorm1d(50)
+        self.l5 = nn.Linear(50, 1)
 
-    def forward(self, state, action):
-        state_action = torch.cat([state, action], 1)
-
-        q = F.relu(self.l1(state_action))
-        q = F.relu(self.l2(q))
-        q = self.l3(q)
-        return q
+    def forward(self, x, u):
+        x = torch.cat([x, u], 1)
+        x = self.bn_0(x)
+        x = F.relu(self.l1(x))
+        x = self.l2(x)
+        x = self.bn_2(x)
+        x = F.relu(x)
+        x = F.relu(self.l3(x))
+        x = self.l4(x)
+        x = self.bn_4(x)
+        x = F.relu(x)
+        x = self.l5(x)
+        return x
 
 
 class TD3:
     def __init__(self, lr, state_dim, action_dim, max_action):
 
-        self.actor = Actor(state_dim, action_dim, max_action).to(device)
-        self.actor_target = Actor(state_dim, action_dim, max_action).to(device)
+        self.actor = Actor(state_dim, action_dim).to(device)
+        self.actor_target = Actor(state_dim, action_dim).to(device)
         self.actor_target.load_state_dict(self.actor.state_dict())
         self.actor_optimizer = optim.Adam(self.actor.parameters(), lr=lr)
 
@@ -95,7 +120,7 @@ class TD3:
         self.max_action = max_action
 
     def select_action(self, state):
-        state = torch.FloatTensor(state.reshape(1, -1)).to(device)
+        state = torch.FloatTensor(state).to(device)
         return self.actor(state).cpu().data.numpy().flatten()
 
     def update(self, replay_buffer, n_iter, batch_size, gamma, polyak, policy_noise, noise_clip, policy_delay):
@@ -104,15 +129,15 @@ class TD3:
             # Sample a batch of transitions from replay buffer:
             state, action_, reward, next_state, done = replay_buffer.sample(batch_size)
             state = torch.FloatTensor(state).to(device)
-            action = torch.FloatTensor(action_).to(device)
+            action = torch.FloatTensor(action_).reshape((batch_size, 1)).to(device)
             reward = torch.FloatTensor(reward).reshape((batch_size, 1)).to(device)
             next_state = torch.FloatTensor(next_state).to(device)
             done = torch.FloatTensor(done).reshape((batch_size, 1)).to(device)
 
             # Select next action according to target policy:
             noise = torch.FloatTensor(action_).data.normal_(0, policy_noise).to(device)
-            noise = noise.clamp(-noise_clip, noise_clip)
-            next_action = (self.actor_target(next_state) + noise)
+            noise = noise.clamp(-noise_clip, noise_clip).reshape((batch_size, 1))
+            next_action = (self.actor_target(next_state)[0] + noise)
             next_action = next_action.clamp(-self.max_action, self.max_action)
 
             # Compute target Q-value:
@@ -192,24 +217,34 @@ import torch
 import gym
 import numpy as np
 
+def normalize_state(state, ranges):
+    state[0] /= ranges[0]
+    state[1] /= ranges[1]
+    state[2] /= ranges[2]
+    state[3] /= ranges[3]
+    state[4] /= ranges[4]
+    state[5] /= ranges[5]
 
 def train():
     ######### Hyperparameters #########
-    env_name = "CartAcrobat-v0" #"BipedalWalker-v2"
+    env_name = "CartAcrobat-v0"  # "BipedalWalker-v2" # "CartAcrobat-v0" #
     log_interval = 10  # print avg reward after interval
     random_seed = 0
     gamma = 0.99  # discount for future rewards
     batch_size = 100  # num of transitions sampled from replay buffer
-    lr = 0.001
+    lr = 0.00001
     exploration_noise = 0.1
     polyak = 0.995  # target policy update parameter (1-tau)
     policy_noise = 0.2  # target policy smoothing noise
     noise_clip = 0.5
     policy_delay = 2  # delayed policy updates parameter
     max_episodes = 10000  # max num of episodes
-    max_timesteps = 2000  # max timesteps in one episode
+    max_timesteps = 500  # max timesteps in one episode
+    save_timestemp = 500  #number of episodes between save action
     directory = "./preTrained/{}".format(env_name)  # save trained models
     filename = "TD3_{}_{}".format(env_name, random_seed)
+    load_pretrain = False
+    normalize = False
     ###################################
 
     env = gym.make(env_name)
@@ -218,6 +253,8 @@ def train():
     max_action = float(env.action_space.high[0])
 
     policy = TD3(lr, state_dim, action_dim, max_action)
+    if load_pretrain:
+        policy.load(directory, filename)
     replay_buffer = ReplayBuffer()
 
     if random_seed:
@@ -234,25 +271,43 @@ def train():
     # training procedure:
     for episode in range(1, max_episodes + 1):
         state = env.reset()
+        if env_name == "CartAcrobat-v0" and normalize:
+            normalize_state(state, [env.x_threshold, 20, np.pi, 50, np.pi, 50])
         for t in range(max_timesteps):
             # select action and add exploration noise:
+            policy.actor.eval()
             action = policy.select_action(state)
-            action = action + np.random.normal(0, exploration_noise, size=env.action_space.shape[0])
+            policy.actor.train()
+            if env_name == "CartAcrobat-v0":
+                size_ = env.num_env * env.action_space.shape[0]
+            else:
+                size_ = env.action_space.shape[0]
+            action = action + np.random.normal(0, exploration_noise, size=size_)
             action = action.clip(env.action_space.low, env.action_space.high)
 
             # take action in env:
             next_state, reward, done, _ = env.step(action)
-            replay_buffer.add((state, action, reward, next_state, float(done)))
+            #env.render()
+            if env_name == "CartAcrobat-v0" and normalize:
+                if abs(next_state[2]) > np.pi or abs(next_state[4]) > np.pi:
+                    raise ValueError('angle out of range')
+                normalize_state(next_state, [env.x_threshold, 20, np.pi, 50, np.pi, 50])
+            for s, a, r, ns, d in zip(state, action, reward, next_state, done.astype('float')):
+                replay_buffer.add((s, a, r, ns, d))
             state = next_state
 
+            if env_name == "CartAcrobat-v0":
+                reward = np.sum(reward) / env.num_env
             avg_reward += reward
             ep_reward += reward
 
             # if episode is done then update policy:
-            if done or t == (max_timesteps - 1):
-                policy.update(replay_buffer, t, batch_size, gamma, polyak, policy_noise, noise_clip, policy_delay)
-                break
+            if np.any(done) or t == (max_timesteps - 1):
+                pass
+                # policy.update(replay_buffer, t, batch_size, gamma, polyak, policy_noise, noise_clip, policy_delay)
+                # break
 
+        policy.update(replay_buffer, 100, batch_size, gamma, polyak, policy_noise, noise_clip, policy_delay)
         # logging updates:
         log_f.write('{},{}\n'.format(episode, ep_reward))
         log_f.flush()
@@ -266,13 +321,13 @@ def train():
             log_f.close()
             break
 
-        if episode > 500:
+        if episode != 0 and episode % save_timestemp == 0:
             policy.save(directory, filename)
 
         # print avg reward every log interval:
         if episode % log_interval == 0:
-            avg_reward = int(avg_reward / log_interval)
-            print("Episode: {}\tAverage Reward: {}".format(episode, avg_reward))
+            avg_reward = avg_reward / log_interval
+            print(f"Episode: {episode}\tAverage Reward: {avg_reward:.2f}")
             avg_reward = 0
 
 
