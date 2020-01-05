@@ -231,14 +231,15 @@ def train():
     log_interval = 10  # print avg reward after interval
     random_seed = 0
     gamma = 0.99  # discount for future rewards
-    batch_size = 100  # num of transitions sampled from replay buffer
-    lr = 0.00001
+    batch_size = 256  # num of transitions sampled from replay buffer
+    lr = 1e-1
+    print(f'Learning Rate: {lr}')
     exploration_noise = 0.1
     polyak = 0.995  # target policy update parameter (1-tau)
     policy_noise = 0.2  # target policy smoothing noise
     noise_clip = 0.5
     policy_delay = 2  # delayed policy updates parameter
-    max_episodes = 10000  # max num of episodes
+    max_episodes = 2000  # max num of episodes
     max_timesteps = 500  # max timesteps in one episode
     save_timestemp = 500  #number of episodes between save action
     directory = "./preTrained/{}".format(env_name)  # save trained models
@@ -248,6 +249,7 @@ def train():
     ###################################
 
     env = gym.make(env_name)
+    env.num_env = 100
     state_dim = env.observation_space.shape[0]
     action_dim = env.action_space.shape[0]
     max_action = float(env.action_space.high[0])
