@@ -64,6 +64,8 @@ class CartPoleContinuousEnv(gym.Env):
         self.force_mag = 10.0
         self.tau = 0.02  # seconds between state updates
         self.kinematics_integrator = 'euler'
+        self.min_action = -1.0
+        self.max_action = 1.0
 
         # Angle at which to fail the episode
         self.theta_threshold_radians = 12 * 2 * math.pi / 360
@@ -95,6 +97,7 @@ class CartPoleContinuousEnv(gym.Env):
 
     def step(self, action):
         assert self.action_space.contains(action), "%r (%s) invalid"%(action, type(action))
+        action = action[0]
         state = self.state
         x, x_dot, theta, theta_dot = state
         force = self.force_mag * action

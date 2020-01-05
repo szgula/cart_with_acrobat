@@ -77,8 +77,8 @@ register(
 )
 
 register(
-    id='CartPoleContinuousEnv-v0',
-    entry_point='gym.envs.classic_control:CartPoleEnv',
+    id='CartPoleContinuous-v0',
+    entry_point='gym.envs.classic_control:CartPoleContinuousEnv',
     max_episode_steps=500,
     reward_threshold=475.0,
 )
