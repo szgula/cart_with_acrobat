@@ -3,3 +3,6 @@ __pycache__/
 
 
 .idea/
+Version_2/DDPG/expDDPG.pyCartAcrobat-v0./core_simple_reward_pow_4_balance
+Version_2/DDPG/preTrained
+log.txt
