@@ -195,7 +195,7 @@ import numpy as np
 
 def train():
     ######### Hyperparameters #########
-    env_name = "CartAcrobat-v0" #"BipedalWalker-v2"
+    env_name = 'CartPoleContinuous-v0'  # "CartAcrobat-v0" #"BipedalWalker-v2" # "LunarLanderContinuous-v2"  #
     log_interval = 10  # print avg reward after interval
     random_seed = 0
     gamma = 0.99  # discount for future rewards
