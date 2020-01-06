@@ -5,7 +5,7 @@ from gym.utils import seeding
 import numpy as np
 
 
-class CartAcrobatEnv(gym.Env):   #CartDoublePoleEnv
+class CartAcrobatDiscreteEnv(gym.Env):   #CartDoublePoleEnv
     metadata = {
         'render.modes': ['human', 'rgb_array'],
         'video.frames_per_second' : 50
@@ -29,7 +29,7 @@ class CartAcrobatEnv(gym.Env):   #CartDoublePoleEnv
         # Angle at which to fail the episode
         self.theta_1_threshold_radians = 45 * 2 * math.pi / 360
         self.theta_2_threshold_radians = 45 * 2 * math.pi / 360
-        self.x_threshold = 2.4
+        self.x_threshold = 4.8
 
         # Angle limit set to 2 * theta_threshold_radians so failing observation is still within bounds
         high = np.array([
@@ -42,11 +42,7 @@ class CartAcrobatEnv(gym.Env):   #CartDoublePoleEnv
         ])
 
         self.observation_space = spaces.Box(-high, high)
-        self.action_space = spaces.Box(
-            low=self.min_action,
-            high=self.max_action,
-            shape=(1,)
-        )
+        self.action_space = spaces.Discrete(3)
 
         self.seed()
         self.viewer = None
@@ -118,11 +114,15 @@ class CartAcrobatEnv(gym.Env):   #CartDoublePoleEnv
             return 0.0
 
     def step(self, action):
+        assert self.action_space.contains(action), "%r (%s) invalid" % (action, type(action))
         state = self.state
         x, x_dot, theta_1, theta_dot_1, theta_2, theta_dot_2 = state
-        force = self.force_mag * float(
-            min(max(action[0], -1.0), 1.0)
-        )
+        if action == 0:
+            force = self.force_mag
+        elif action == 1:
+            force = -self.force_mag
+        else:
+            force = 0.0
 
         accel = self.dstate_dt(force, dt=self.tau)
 
