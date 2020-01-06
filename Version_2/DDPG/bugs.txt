@@ -1,0 +1,5 @@
+1) Reward dependent of velocity not angle
+
+2) No 0.5 factor in equation for distance (in acceleration part)
+
+3)
